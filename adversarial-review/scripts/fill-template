@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# fill-template <template.md> KEY=VALUE...  -> prints template with <SHARED> and <KEY> slots filled.
+# VALUE may be @file to read from a file. Unfilled slots are left visible so the caller notices.
+set -euo pipefail
+dir=$(cd "$(dirname "$0")/.." && pwd); tpl=$1; shift
+python3 - "$tpl" "$dir/templates/shared.md" "$@" <<'PY'
+import sys,re
+tpl=open(sys.argv[1]).read(); shared=open(sys.argv[2]).read().rstrip()
+out=tpl.replace('<SHARED>',shared)
+for kv in sys.argv[3:]:
+    k,v=kv.split('=',1)
+    if v.startswith('@'): v=open(v[1:]).read().rstrip()
+    out=out.replace('<'+k+'>',v)
+sys.stdout.write(out)
+PY

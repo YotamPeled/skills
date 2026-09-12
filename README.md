@@ -1,50 +1,71 @@
 # skills
 
-Reusable [Claude Code](https://claude.com/claude-code) skills.
-
-A skill is a folder with a `SKILL.md` — instructions Claude loads on demand when the task
-matches, or when you type `/<name>`.
+Reusable skills for [Claude Code](https://claude.com/claude-code) and
+[Codex](https://github.com/openai/codex). A skill is a folder with a `SKILL.md` the agent loads
+when the task matches, or when you type `/<name>`.
 
 ## Install
 
-Clone anywhere, then symlink the skills you want into your Claude skills directory:
+Clone anywhere, then symlink the skills you want.
 
 ```bash
-git clone git@github.com:YotamPeled/skills.git ~/src/skills
+git clone https://github.com/YotamPeled/skills.git ~/src/skills
+
+# Claude Code
 ln -s ~/src/skills/adversarial-review ~/.claude/skills/adversarial-review
+ln -s ~/src/skills/goal-prompt        ~/.claude/skills/goal-prompt
+ln -s ~/src/skills/adversarial-review/agents/review-auditor.md ~/.claude/agents/
+ln -s ~/src/skills/adversarial-review/agents/review-breaker.md ~/.claude/agents/
+
+# Codex
+ln -s ~/src/skills/adversarial-review/codex ~/.codex/skills/adversarial-review
+ln -s ~/src/skills/goal-prompt              ~/.codex/skills/goal-prompt
 ```
 
-`~/.claude/skills/` = available in every project. `<project>/.claude/skills/` = that project only.
+`~/.claude/skills/` is available in every project; `<project>/.claude/skills/` in that project
+only. Codex reads `~/.codex/skills/`.
 
 ## Skills
 
 ### `adversarial-review`
 
-Launches **two independent Opus reviewer agents in parallel** over a plan doc, a branch diff,
-or any artifact — then merges their findings.
+Two independent reviewers over a diff, a plan, or any artifact, run in parallel and merged:
 
-The pair differs in *method*, not topic, which is what makes it worth twice the tokens:
+- **the auditor** verifies by READING: does the artifact's story match the code? Callers that
+  supposedly don't exist, contracts that move, migrations that break a live path, drift from the
+  spec. No write tools by construction.
+- **the breaker** verifies by EXECUTING, in a scratch worktree with no network: runs the suite the
+  way CI runs it, feeds adverse input, races concurrent calls, stops a dependency mid-operation.
+  Every finding ships with the exact sequence and the observed output.
 
-- **A — the auditor** verifies by READING: does the artifact's story match the code? Callers
-  that supposedly don't exist, contracts that move, migrations that break a live path, drift
-  from the spec.
-- **B — the breaker** verifies by DOING: boots the thing in scratch containers, runs the test
-  suite, crafts hostile input, races concurrent calls, kills a dependency mid-operation. Every
-  finding must ship with a reproducible sequence and real observed output — no "this looks
-  fragile".
+The pair differs in *method*, not topic. Findings carry severity (BLOCKER / MAJOR / MINOR),
+confidence, `file:line`, scenario, repro, observed output, blast radius and a one-sentence fix;
+`scripts/check-findings` rejects a report that lacks any of them or names a file outside the
+diff. What both reviewers surface independently is near-certain. Each also reports what it
+checked and cleared, which separates "verified safe" from "never looked at".
 
-Findings come back severity-ranked (BLOCKER/MAJOR/MINOR/NIT) with a verdict. Anything both
-reviewers surface independently is near-certain; verify the serious ones yourself before
-acting, then fold the accepted fixes back into the spec so it stays the source of truth.
+Layout: `SKILL.md` is the Claude driver (two subagents, `agents/` holds their definitions);
+`codex/` is the Codex driver (two `codex exec` sessions, `scripts/run-auditor.sh` and
+`scripts/run-breaker.sh`); `templates/` and `scripts/` are shared. An optional third pass, the
+disprover, re-tests the findings when the first two return more than about ten.
 
-Each reviewer also reports what it checked and *cleared* — that list is half the value, since
-it separates "verified safe" from "never looked at".
+Track record: on one microservice the auditor caught a plan built on a false premise and a
+migration that would have broken a live admin path; the breaker caught an endpoint that 500'd
+under ordinary concurrency, non-atomic account deletion that resurrected deleted accounts, a
+rate limit that throttled the whole site as one bucket, and a config that would have
+crashlooped in production. On a shell-heavy verification suite, one round returned 21 real
+findings (13 by reading, 8 by execution, 3 found by both).
 
-**Track record** (one microservice, three rounds): the auditor caught a plan built on a false
-premise and a migration that would have broken a live admin path; the breaker caught an
-endpoint that 500'd under ordinary concurrency, non-atomic account deletion that orphaned
-data and resurrected deleted accounts, a rate limit that throttled the whole site as one
-bucket, and a config that would have crashlooped in production.
+Cost: two long reviewer sessions per invocation. Worth it before a merge, overkill for a
+one-line change; the skill has a light option (auditor only).
 
-Cost: two long-running Opus agents per invocation. Worth it before a merge, overkill for a
-one-line change.
+Note for Codex: a breaker session that writes executing payloads or narrates in attack
+vocabulary gets cut by OpenAI's cybersecurity classifier and its report is lost. The breaker
+template therefore proves a splice by a parse error, never by an executing value, and keeps a
+running `.breaker/progress.md`; see the Codex `SKILL.md` for the rest.
+
+### `goal-prompt`
+
+How to write a correct `/goal` for Codex or Claude Code: the official template and its six
+slots, the character cap, what changes when a goal is active, and a worked example
+(`examples/overnight-board-goal.md`).

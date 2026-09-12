@@ -1,0 +1,6 @@
+interface:
+  display_name: Adversarial review
+  short_description: Two independent reviewers (auditor reads, breaker executes), evidence per finding
+  default_prompt: "$adversarial-review: review <base>..<head> against <spec>"
+policy:
+  allow_implicit_invocation: false

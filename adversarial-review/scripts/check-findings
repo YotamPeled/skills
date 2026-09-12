@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# check-findings <reviewer-output.md> [diff-file]: exit 1 if the JSON block is missing/invalid,
+# any finding lacks a required field, or (with a diff file) a finding's file is not in the diff.
+set -euo pipefail
+python3 - "$1" "${2:-}" <<'PY'
+import sys,json,re
+txt=open(sys.argv[1]).read(); diff=open(sys.argv[2]).read() if sys.argv[2] else None
+m=list(re.finditer(r'\{\s*"findings"\s*:',txt))
+if not m: print("FAIL: no JSON findings block"); sys.exit(1)
+start=m[-1].start(); depth=0
+for i,ch in enumerate(txt[start:],start):
+    depth+= (ch=='{') - (ch=='}')
+    if depth==0: end=i+1; break
+try: d=json.loads(txt[start:end])
+except Exception as e: print("FAIL: JSON invalid:",e); sys.exit(1)
+req=["title","severity","confidence","file","line_range","scenario","repro","observed","blast_radius","fix"]
+bad=0
+for i,f in enumerate(d.get("findings",[]),1):
+    miss=[k for k in req if k not in f or f[k] in ("",None)]
+    if miss: print(f"FAIL finding {i}: missing {miss}"); bad+=1
+    if diff is not None and f.get("file"):
+        base=f["file"].split('/')[-1]
+        if base not in diff: print(f"FAIL finding {i}: {f['file']} not in diff"); bad+=1
+for k in ("verdict","correct","ci_repro"):
+    if k not in d: print(f"FAIL: top-level {k} missing"); bad+=1
+print(f"{'OK' if not bad else 'FAIL'}: {len(d.get('findings',[]))} findings, verdict={d.get('verdict')}, correct={d.get('correct')}")
+sys.exit(1 if bad else 0)
+PY

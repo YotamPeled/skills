@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# review-package <base-ref> [head-ref] [out-file]: commit list + --stat + diff -U10 into one file.
+set -euo pipefail
+base=${1:?base ref}; head=${2:-HEAD}; out=${3:-$(mktemp -t review-XXXXXX.diff)}
+{ echo "# review package: $base..$head  ($(date -u +%FT%TZ), $(git rev-parse --show-toplevel))"
+  echo; echo "## commits"; git log --oneline --no-decorate "$base..$head"
+  echo; echo "## stat"; git diff --stat "$base...$head"
+  echo; echo "## diff"; git diff -U10 "$base...$head"; } > "$out"
+echo "$out"
