@@ -10,7 +10,16 @@ pkg=$("$dir/scripts/review-package" "$base" HEAD "$out/package.diff")
 wt="$out/wt"; git worktree add --detach "$wt" HEAD >/dev/null
 # never remove blind: a link inside the worktree (node_modules -> the real one) is followed by
 # --force and wipes the original (2026-09-03). Unlink links first, then remove.
-cleanup() { find "$wt" -type l -exec rm -f {} + 2>/dev/null || true; git worktree remove --force "$wt" 2>/dev/null || true; }
+# Two passes: POSIX symlinks (find -type l; also what MSYS/Git Bash reports), then Windows reparse
+# points (junctions are not -type l under MSYS), removed with rmdir so the target is not followed.
+cleanup() {
+  find "$wt" -type l -exec rm -f {} + 2>/dev/null || true
+  if command -v cmd.exe >/dev/null 2>&1; then
+    cmd.exe /c "dir /S /B /AL \"$(cygpath -w "$wt" 2>/dev/null || echo "$wt")\"" 2>/dev/null \
+      | tr -d '\r' | while IFS= read -r j; do [ -n "$j" ] && cmd.exe /c "rmdir \"$j\"" >/dev/null 2>&1 || true; done
+  fi
+  git worktree remove --force "$wt" 2>/dev/null || true
+}
 trap cleanup EXIT
 prompt=$("$dir/scripts/fill-template" "$dir/templates/breaker.md" "TARGET=$pkg" "${kv[@]}")
 codex exec --cd "$wt" -s workspace-write -c sandbox_workspace_write.network_access=false \

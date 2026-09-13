@@ -6,7 +6,10 @@ set -euo pipefail
 ${PYTHON:-$(command -v python3 || command -v python)} - "$1" "${2:-}" <<'PY'
 import sys,json,re
 txt=open(sys.argv[1]).read(); diff=open(sys.argv[2]).read() if sys.argv[2] else None
-def norm(p): return re.sub(r'^([a-z]:)?[/\\]+','',p.replace('\\','/'),flags=re.I).lstrip('./')
+def norm(p):
+    p=re.sub(r'^([a-z]:)?[/\\]+','',p.replace('\\','/'),flags=re.I)
+    while p.startswith('./'): p=p[2:]
+    return p
 files=set()
 if diff is not None:
     for m in re.finditer(r'^(?:\+\+\+ b/|diff --git a/\S+ b/)(\S+)',diff,re.M): files.add(norm(m.group(1)))
