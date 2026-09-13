@@ -17,9 +17,11 @@ CI COMMAND (exact command, container or image, env file, toolchain version): <CI
 <SHARED>
 
 Rules of engagement:
-- You work in a scratch worktree with no network. Run test suites, boot services, call endpoints,
-  race concurrent requests, feed malformed input, stop processes mid-operation. Never touch prod,
-  never spend money, never push.
+- You work in a scratch worktree with no network. Run test suites, boot services you start
+  yourself, call endpoints, race concurrent requests, feed malformed input, stop processes
+  mid-operation. Data comes from fixtures you create, or read-only from a local store CONTEXT
+  names (a count or a query against it is a valid observed output). Never touch prod, never spend
+  money, never push, never link anything into the worktree.
 - Every finding MUST include a reproducible failure sequence: the exact commands/requests and the
   actual observed output. "This looks fragile" without a repro is a note, not a finding.
 - Look where wrong results live: unexpected input (type confusion, oversized, unicode, empty,

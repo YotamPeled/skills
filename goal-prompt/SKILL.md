@@ -115,6 +115,12 @@ The template and checklist above apply, with these differences:
 - **Background work defers the judgement**; idle check-ins come at 30 min, then doubling, at
   most three between your prompts.
 - Survives `--resume`/`--continue`; 4,000-character cap; one goal per session; `/goal clear`.
+- **There is no pause.** "Stop" in the chat does not stop it: the judge re-prompts after every
+  turn (observed: eight re-prompts while the owner was asking questions). To talk to the session,
+  `/goal clear` first, then re-paste the goal when done.
+- **The state/progress file is the only memory across compaction.** The judge re-renders the
+  objective, not the history; anything the next turn needs (round counter, open findings, last
+  decision) is written to that file, and the goal names it.
 - Headless: `claude -p "/goal …"` runs the loop to completion.
 
 **/goal or /loop?** Official comparison: `/goal` starts the next turn when the previous one

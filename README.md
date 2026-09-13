@@ -73,6 +73,14 @@ rate limit that throttled the whole site as one bucket, and a config that would 
 crashlooped in production. On a shell-heavy verification suite, one round returned 21 real
 findings (13 by reading, 8 by execution, 3 found by both).
 
+Reviewer boundaries the templates carry: never read, copy or print `.env*`; never call the
+project's own model-backed endpoints (spending through the owner's account); never restart a
+server or write a store the reviewer did not create; read-only access to a local store only when
+CONTEXT names it; a `SCOPE_DIRS` slot (default: this checkout only) so a breaker never greps
+sibling clones; no symlinks or junctions inside the scratch worktree, and the driver unlinks
+before `worktree remove --force` (a linked `node_modules` was once followed and wiped).
+`check-findings` accepts Windows paths and matches against the diff's file list, not basenames.
+
 Cost: two long reviewer sessions per invocation. Worth it before a merge, overkill for a
 one-line change; the skill has a light option (auditor only).
 

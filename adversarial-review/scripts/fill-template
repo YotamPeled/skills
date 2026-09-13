@@ -3,7 +3,7 @@
 # VALUE may be @file to read from a file. Unfilled slots are left visible so the caller notices.
 set -euo pipefail
 dir=$(cd "$(dirname "$0")/.." && pwd); tpl=$1; shift
-python3 - "$tpl" "$dir/templates/shared.md" "$@" <<'PY'
+${PYTHON:-$(command -v python3 || command -v python)} - "$tpl" "$dir/templates/shared.md" "$@" <<'PY'
 import sys,re
 tpl=open(sys.argv[1]).read(); shared=open(sys.argv[2]).read().rstrip()
 out=tpl.replace('<SHARED>',shared)
@@ -12,5 +12,6 @@ for kv in sys.argv[3:]:
     if v.startswith('@'): v=open(v[1:]).read().rstrip()
     out=out.replace('<'+k+'>',v)
 out=out.replace('<PRIOR_FINDINGS>','none (first round)')
+out=out.replace('<SCOPE_DIRS>','the repository that contains TARGET, this checkout only')
 sys.stdout.write(out)
 PY

@@ -36,6 +36,10 @@ supposed to satisfy, not whether you think it does. A reviewer given your conclu
 - `subagent_type: review-auditor`, prompt = filled auditor template. Tools: Read/Grep/Glob only.
 - `subagent_type: review-breaker`, prompt = filled breaker template, `isolation: "worktree"`.
   Tools: Read/Grep/Glob/Bash; the worker-fence hook refuses push and merge inside it.
+  Worktree removal is the driver's job and is never `remove --force` blind: a symlink or junction
+  inside the worktree (node_modules linked to the real one) is followed by the forced removal and
+  wipes the original (observed 2026-09-03). Remove only after `find <wt> -type l` (and reparse
+  points on Windows) is empty, else unlink those entries first or use a plain copy of the tree.
 
 Effort is set by the agent definition (Opus 5, high); the templates carry no effort line.
 Neither reviewer sees the other's findings. Do not review inline yourself.

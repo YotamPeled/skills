@@ -3,9 +3,15 @@
 # any finding lacks a required field. With a diff file, a finding whose file is outside the diff is
 # NOT rejected: it is demoted to PRE-EXISTING (severity kept as a note, cannot block) and reported.
 set -euo pipefail
-python3 - "$1" "${2:-}" <<'PY'
+${PYTHON:-$(command -v python3 || command -v python)} - "$1" "${2:-}" <<'PY'
 import sys,json,re
 txt=open(sys.argv[1]).read(); diff=open(sys.argv[2]).read() if sys.argv[2] else None
+def norm(p): return re.sub(r'^([a-z]:)?[/\\]+','',p.replace('\\','/'),flags=re.I).lstrip('./')
+files=set()
+if diff is not None:
+    for m in re.finditer(r'^(?:\+\+\+ b/|diff --git a/\S+ b/)(\S+)',diff,re.M): files.add(norm(m.group(1)))
+def in_diff(f):
+    f=norm(f); return any(f==d or d.endswith('/'+f) or f.endswith('/'+d) for d in files)
 m=list(re.finditer(r'\{\s*"findings"\s*:',txt))
 if not m: print("FAIL: no JSON findings block"); sys.exit(1)
 start=m[-1].start(); depth=0
@@ -20,8 +26,7 @@ for i,f in enumerate(d.get("findings",[]),1):
     miss=[k for k in req if k not in f or f[k] in ("",None)]
     if miss: print(f"FAIL finding {i}: missing {miss}"); bad+=1
     if diff is not None and f.get("file"):
-        base=f["file"].split('/')[-1]
-        if base not in diff:
+        if not in_diff(f["file"]):
             f["demoted"]="PRE-EXISTING (file outside the round diff)"; demoted+=1
             print(f"NOTE finding {i}: {f['file']} not in diff -> PRE-EXISTING, listed, cannot block")
 for k in ("verdict","correct","ci_repro"):

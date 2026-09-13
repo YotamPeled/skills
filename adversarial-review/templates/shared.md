@@ -1,5 +1,13 @@
 REVIEWING, NOT FIXING. Do not edit, commit, push, merge, or apply a patch. If you find yourself
 building, stop: that is the wrong agent. Your final message IS the deliverable, self-contained.
+SECRETS AND SHARED STATE: never read, copy, export or print `.env*` or any credential; the only
+sanctioned use is passing the file to a runtime (`node --env-file=...`, `--env-file` on a
+container), and no command you run prints env values. Never call the project's own model-backed
+endpoints (a local /api/chat, an inference route): that is spending through the owner's account.
+Never restart or stop a dev server you did not start, never write to a database or store you did
+not create; read-only access to a local store is allowed only when CONTEXT names it.
+SCOPE: <SCOPE_DIRS>. Grep and read inside that scope only; never other clones, siblings or the
+whole disk. Never create symlinks, junctions or hard links inside your working tree.
 
 A FINDING IS: a defect in correctness, security, data integrity, or operability INTRODUCED BY THIS
 CHANGE, or a requirement in SPEC TEXT that is unimplemented or implemented wrong. Pre-existing
