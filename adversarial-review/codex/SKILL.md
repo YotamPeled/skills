@@ -34,14 +34,30 @@ wait
 2. Each script ends with `check-findings`; a FAIL goes back to that reviewer once with the message.
    Read `$OUT/a/auditor.md` and `$OUT/b/breaker.md` only after both checks pass.
 
-3. Optional disprover when A+B exceed about ten findings: fill `templates/disprover.md`
-   (FINDINGS_FILE, TARGET, CI_COMMAND) and run it like the breaker. Only UPHELD findings continue.
+3. Disprover, before any fixing, on every BLOCKER and MAJOR that has no observed output (the
+   auditor's findings; breaker findings whose `observed` is reasoning, not a run): fill
+   `templates/disprover.md` (FINDINGS_FILE, TARGET, CI_COMMAND) and run it like the breaker. A
+   breaker finding with an executed repro skips it; its fix is proven by the repro failing before
+   and passing after. Only UPHELD or executed findings can block (Claude driver §5).
 
-4. Merge, present and classify exactly as sections 6-9 of the Claude driver
+4. Merge, present, classify and STOP exactly as sections 6-9 of the Claude driver
    (`~/.claude/skills/adversarial-review/SKILL.md`): ranked findings by severity then confidence,
    spec axis separate, agreement map, DISMISSED and PRE-EXISTING carried through; classify each
-   finding contract-misread / actionable / trade-off / noise; doubt-theater predicate; merge-ledger
-   record "reviewed by adversarial-review, verdict files <paths>".
+   finding contract-misread / actionable / trade-off / noise; the §8 stop rule (the gate decides,
+   never the verdict; the oracle gates, review advises; a contract sentence over all inputs is
+   checked by the oracle, not by reviewer-invented cases; one rule violation blocks once per rule,
+   not per site; cap three rounds; escalate on a resurfaced finding, a repeated root cause, or three
+   rounds patching only already-patched files); the stop message names the oracle's blind spots;
+   merge-ledger record "reviewed by adversarial-review, verdict files <paths>".
+
+5. Round N>1: package only the delta since the previous round's head, pass
+   `PRIOR_FINDINGS=@<ledger>` (dispositions only), point `check-findings` at the round diff (an
+   out-of-diff finding is demoted to PRE-EXISTING, listed, never dropped); the oracle runs at
+   round 1 and the terminal round only, the terminal run never skipped, and the auditor may get one
+   full-scope pass at the terminal round (Claude driver §3).
+
+6. Goal and review go hand in hand: a goal driving this skill exits on the stop message's
+   LANDING DECISION, never on a reviewer verdict or "until approved" (goal-prompt skill).
 
 ## Not this skill
 

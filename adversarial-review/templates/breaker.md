@@ -46,5 +46,4 @@ Rules of engagement:
   to record in CI_REPRO, not a gate that stops the review; only a limit CONTEXT does not name is.
 
 CLEARED lists the failure cases you TRIED that the code survived. DISMISSED also lists every
-case you considered and did not run, with the reason. A short DISMISSED list means you weren't
-looking hard enough.
+case you considered and did not run, with the reason.

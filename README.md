@@ -46,8 +46,25 @@ checked and cleared, which separates "verified safe" from "never looked at".
 
 Layout: `SKILL.md` is the Claude driver (two subagents, `agents/` holds their definitions);
 `codex/` is the Codex driver (two `codex exec` sessions, `scripts/run-auditor.sh` and
-`scripts/run-breaker.sh`); `templates/` and `scripts/` are shared. An optional third pass, the
-disprover, re-tests the findings when the first two return more than about ten.
+`scripts/run-breaker.sh`); `templates/` and `scripts/` are shared. A third pass, the disprover,
+re-tests every BLOCKER/MAJOR that has no executed repro before anything is fixed.
+
+**The gate decides, never the reviewer's verdict.** Round 1 reviews the whole change; later
+rounds review only the delta plus a ledger of prior dispositions the reviewers may not re-raise.
+Landing is computed from the findings JSON and the oracle (benchmark, test suite, corpus) named
+before round 1: red CI, oracle under its bar, an upheld BLOCKER, an upheld MAJOR inside the diff,
+or an unimplemented contract item blocks; everything else is listed in one follow-up issue. The
+run stops when the blocking set is empty, and escalates at three rounds, on a finding that
+resurfaces after its fix, on a repeated root cause, or on three rounds that only patch
+already-patched files. Lesson behind it: a loop keyed on "until the reviewers approve" ran 25
+rounds and 12 hours on one proof of concept and was stopped by hand; reviewers always return new,
+real, shrinking findings, so convergence has to be a property of the gate.
+
+**Goal and review go hand in hand.** A `/goal` that drives a review loop must exit on the
+review's LANDING DECISION line, never on a reviewer verdict: the goal outranks the skill, so a goal
+written as "until approved" re-prompts the session past every stop rule. The `goal-prompt`
+checklist rejects that wording and requires the oracle, its bar, a round cap and a progress-file
+round counter in the goal text.
 
 Track record: on one microservice the auditor caught a plan built on a false premise and a
 migration that would have broken a live admin path; the breaker caught an endpoint that 500'd

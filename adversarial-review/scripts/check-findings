@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # check-findings <reviewer-output.md> [diff-file]: exit 1 if the JSON block is missing/invalid,
-# any finding lacks a required field, or (with a diff file) a finding's file is not in the diff.
+# any finding lacks a required field. With a diff file, a finding whose file is outside the diff is
+# NOT rejected: it is demoted to PRE-EXISTING (severity kept as a note, cannot block) and reported.
 set -euo pipefail
 python3 - "$1" "${2:-}" <<'PY'
 import sys,json,re
@@ -14,15 +15,17 @@ for i,ch in enumerate(txt[start:],start):
 try: d=json.loads(txt[start:end])
 except Exception as e: print("FAIL: JSON invalid:",e); sys.exit(1)
 req=["title","severity","confidence","file","line_range","scenario","repro","observed","blast_radius","fix"]
-bad=0
+bad=0; demoted=0
 for i,f in enumerate(d.get("findings",[]),1):
     miss=[k for k in req if k not in f or f[k] in ("",None)]
     if miss: print(f"FAIL finding {i}: missing {miss}"); bad+=1
     if diff is not None and f.get("file"):
         base=f["file"].split('/')[-1]
-        if base not in diff: print(f"FAIL finding {i}: {f['file']} not in diff"); bad+=1
+        if base not in diff:
+            f["demoted"]="PRE-EXISTING (file outside the round diff)"; demoted+=1
+            print(f"NOTE finding {i}: {f['file']} not in diff -> PRE-EXISTING, listed, cannot block")
 for k in ("verdict","correct","ci_repro"):
     if k not in d: print(f"FAIL: top-level {k} missing"); bad+=1
-print(f"{'OK' if not bad else 'FAIL'}: {len(d.get('findings',[]))} findings, verdict={d.get('verdict')}, correct={d.get('correct')}")
+print(f"{'OK' if not bad else 'FAIL'}: {len(d.get('findings',[]))} findings ({demoted} demoted to PRE-EXISTING), verdict={d.get('verdict')}, correct={d.get('correct')}")
 sys.exit(1 if bad else 0)
 PY

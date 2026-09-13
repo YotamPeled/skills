@@ -91,6 +91,11 @@ the list below. 5. Paste into the composer.
 - [ ] No clock, no deadline, no "quickly"
 - [ ] Settled decisions marked as closed
 - [ ] Under 4,000 characters, one paragraph
+- [ ] Every inner loop (review, retry, re-run) has a round cap and a stop rule
+- [ ] A review loop exits on the review skill's LANDING DECISION, never on a reviewer verdict;
+      a goal that says "until approved" / "until the reviewers pass it" is rejected here
+- [ ] The oracle (benchmark, test suite, corpus) and its pass bar are named in the goal, and the
+      round counter lives in the progress file so the cap is checkable from outside
 
 ## Claude Code's `/goal` — same shape, different judge
 
@@ -122,3 +127,22 @@ minutes is a loop; the builder is a goal.
 
 `examples/overnight-board-goal.md` — an overnight goal that drives a project board (2,112
 characters), reviewed against the official docs on 2026-09-07.
+
+## Goal and review go hand in hand (added 2026-09-13)
+
+The goal outranks the review skill: whatever the skill's stop rule says, a goal whose exit is a
+reviewer's approval re-prompts the session until the reviewers approve, and reviewers of a proof
+of concept return new, real, shrinking findings every round (observed: 25 rounds, 12 hours, two
+reviewer sessions plus a full benchmark run per round, stopped by the owner, not by the goal).
+A cap alone is not the fix; the exit condition is. Write the review loop like this:
+
+- exit: "the adversarial-review stop message reads LANDING DECISION land-clean or
+  land-with-exceptions" (the driver computes it from the gate: oracle at its bar, red CI, upheld
+  BLOCKER/MAJOR, contract items), never "until both reviewers approve";
+- the oracle and its pre-registered bar named in the goal text;
+- "at most 3 review rounds; round N>1 reviews the delta only; after 3, or on any escalation the
+  skill names, record the open findings, produce the stop message, and stop";
+- the round counter in the progress file.
+
+Judge rule for Claude's `/goal`: the judge reads the transcript, so the LANDING DECISION line
+must appear verbatim in the session's output for the condition to be met.

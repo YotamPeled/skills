@@ -11,5 +11,6 @@ for kv in sys.argv[3:]:
     k,v=kv.split('=',1)
     if v.startswith('@'): v=open(v[1:]).read().rstrip()
     out=out.replace('<'+k+'>',v)
+out=out.replace('<PRIOR_FINDINGS>','none (first round)')
 sys.stdout.write(out)
 PY

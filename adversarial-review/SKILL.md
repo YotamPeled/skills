@@ -44,6 +44,21 @@ For an external reviewer (Grok, Muse), hand the same filled template as the spec
 restriction does not reach them, so the fence there is prose only, and `check-findings` is the
 only gate.
 
+**Round 1 reviews the whole change. Round N>1 reviews only the delta**: TARGET is
+`review-package <round N-1 head> <round N head>` plus an IN-SCOPE FILES line (files the fixes
+touched, plus every file named in a round N-1 finding), and `check-findings` is pointed at that
+round diff: a finding outside it is demoted to PRE-EXISTING mechanically (listed, never blocking,
+never dropped). Pass `PRIOR_FINDINGS=@<ledger>`:
+every earlier finding with its disposition (fixed <sha> / refuted <evidence> / accepted trade-off
+<reason> / backlogged), never an open finding and never your claim that the code is now right. A
+fix that rewrites a region a prior round CLEARED (rule of thumb: over 30 changed lines in such a
+file) puts that file back in full scope for one round; that is the only way back to reviewed code.
+An expensive oracle (a benchmark, a corpus run) runs at round 1 and at the terminal round only;
+in between, CI_COMMAND is scoped to the area under review. The terminal run is never skipped: it
+is the only pass that catches a regression review did not read. At the terminal round the auditor
+may also be given the whole artifact once more (a full-scope pass), since real defects in
+unchanged files are found by reading, not by diffing.
+
 ## 4. Verify the outputs mechanically, then read them
 
 `scripts/check-findings <output.md> <diff-file>` fails when the JSON block is missing or invalid,
@@ -51,11 +66,17 @@ a finding lacks an evidence field, or a finding points at a file outside the dif
 output goes back to the same reviewer once with the checker's message; a second failure is a
 finding about the reviewer, recorded, and the run continues with what passed.
 
-## 5. Optional third pass: the disprover
+## 5. Third pass, before any fixing: the disprover, on what was not executed
 
-When A and B together return more than about ten findings, or you cannot verify the
-BLOCKER/MAJOR ones yourself: one `review-breaker` with `templates/disprover.md`
-(`FINDINGS_FILE=`, `TARGET=`, `CI_COMMAND=`). Only UPHELD findings continue.
+Before anything is fixed, every BLOCKER and MAJOR that has NO observed output (the auditor's
+findings, and any breaker finding whose `observed` field is reasoning rather than a run) goes
+through one `review-breaker` with `templates/disprover.md` (`FINDINGS_FILE=`, `TARGET=`,
+`CI_COMMAND=`). A breaker finding with an executed repro in the CI environment is already its own
+disproof attempt and skips this pass; its fix is proven by the repro failing before and passing
+after. Only UPHELD or executed findings can block; REFUTED, UNREPRODUCIBLE and MISCLASSIFIED ones
+go to the ledger unedited. The published 63-83% kill rate is for reviewers that do not execute;
+on executed findings it was near zero in two runs here, so the pass is spent where it pays. MINOR
+findings skip the disprover and go straight to the backlog.
 
 ## 6. Merge and present
 
@@ -84,10 +105,58 @@ Presumptive blockers, always surfaced with the simpler alternative: a refactor t
 complexity; a file pushed past its size boundary with no decomposition; feature logic in a shared
 module; a near-duplicate of a canonical helper; a silent fallback hiding an unclear invariant.
 
-## 8. Doubt theater, the checkable signal
+## 8. The stop rule: the gate decides, never the reviewer's verdict
 
-Two or more passes with substantive findings and zero classified actionable: you are validating,
-not doubting. Stop, say so, escalate. Count the classifications; this is a predicate, not a feeling.
+`verdict: needs-rework` is advisory. The driver computes the landing decision from the JSON blocks
+after every round. Name the oracle (benchmark, differential or property test, frozen corpus with
+ground truth) and its pre-registered pass bar in CONTEXT before round 1; where one exists it decides
+whether the change lands and review advises. A reviewer finding the oracle does not reproduce is a
+request for a new oracle case, not a merge block.
+
+BLOCKS landing: a red mechanical gate (build, tests, CI_COMMAND as CI runs it); the oracle below its
+bar or regressed; any UPHELD BLOCKER; any UPHELD MAJOR at confidence >= 0.6 inside or provably reached
+from the diff; any MAJOR corroborated by both reviewers; any unimplemented item of the frozen
+contract that is checkable by construction (a contract sentence quantified over all inputs, "never
+guesses", "any construct", is checked by the oracle only; a reviewer-invented instance outside the
+oracle is an oracle-case request, listed under SPEC). A RULES FILE violation blocks once per rule;
+the same rule again in the same class is one design finding, fixed at the rule or generator, never
+per site. LISTED, never blocking, never silent: every MINOR and NIT; MAJOR below 0.6 and
+single-source; anything first raised in round 3 that is not a BLOCKER; PRE-EXISTING; SPEC-unasked;
+accepted trade-offs. Listed items go to one follow-up issue, one bullet per finding restating it
+verbatim.
+
+STOP AND LAND when a round leaves the blocking set empty. Round two is the normal exit; a round whose
+upheld findings are all MINOR/NIT is convergence, not a reason for another round.
+STOP AND ESCALATE to the owner, with the open findings in hand, when any of these fires:
+- three rounds have run (the cap is a backstop; if it fires, that is an architecture signal,
+  not a landing signal);
+- a finding resurfaces unchanged after its fix;
+- two consecutive rounds produced findings and none classified actionable (doubt theater: you are
+  validating, not doubting; counted, not felt);
+- a round's findings are all variations on a root cause already disposed (fix the rule, not the
+  instance: the same class three times means a rulebook entry and a regenerated slice, not a
+  fourth patch);
+- the oracle has been green for two rounds while findings shrink in scope;
+- fixable theater: three consecutive rounds whose upheld findings all land in files already
+  patched in three earlier rounds (every finding real, cheap and irrelevant; the class, not the
+  instance, is the defect: fix the rule and regenerate).
+Never reduce finding volume by telling the reviewer the code is probably fine: reassuring context
+costs up to 93 points of detection. Volume is reduced by the landing test, the severity
+definitions, the disprover and the oracle, never by softening the contract.
+
+The stop message, whichever stop fired, fills every field (`n/a` allowed, blank not):
+LANDING DECISION land-clean | land-with-exceptions | hold; STOP REASON; ROUNDS k/3 with cost
+(benchmark runs, reviewer runs); GATES (contract items, mechanical exit code, oracle value vs bar,
+review upheld/raised with disprover kill rate); BLOCKING (must be empty to land); LISTED with the
+reason each does not block; DISMISSED BY DISPROVER; PRE-EXISTING; SPEC; WHAT THIS DECISION DOES NOT
+COVER (paths not executed, oracle splits not run, surfaces frozen out after round 1, and the
+oracle's blind spots by name: every quantity it does not measure or measures on unlabelled data,
+so "oracle green" is read at its true strength); NEXT ROUND WOULD COST.
+
+**Goal and review go hand in hand.** A `/goal` that drives this skill names the exit as the
+LANDING DECISION field of the stop message, never a reviewer verdict, never "until approved"; see
+the goal-prompt skill. A goal written the old way re-prompts the session past every stop rule
+here, because the goal outranks the skill.
 
 ## 9. Afterwards
 
