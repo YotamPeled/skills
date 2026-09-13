@@ -11,12 +11,17 @@ wt="$out/wt"; git worktree add --detach "$wt" HEAD >/dev/null
 # never remove blind: a link inside the worktree (node_modules -> the real one) is followed by
 # --force and wipes the original (2026-09-03). Unlink links first, then remove.
 # Two passes: POSIX symlinks (find -type l; also what MSYS/Git Bash reports), then Windows reparse
-# points (junctions are not -type l under MSYS), removed with rmdir so the target is not followed.
+# points (junctions are not -type l under MSYS). Directory.Delete on a reparse point removes the link
+# only and never recurses into the target. cmd.exe /c from Git Bash does not work (MSYS rewrites /c
+# and mangles quotes; the junction survived). The PowerShell pass was verified on a Windows machine
+# on 2026-09-13; on Linux powershell.exe is absent and the block is skipped.
 cleanup() {
   find "$wt" -type l -exec rm -f {} + 2>/dev/null || true
-  if command -v cmd.exe >/dev/null 2>&1; then
-    cmd.exe /c "dir /S /B /AL \"$(cygpath -w "$wt" 2>/dev/null || echo "$wt")\"" 2>/dev/null \
-      | tr -d '\r' | while IFS= read -r j; do [ -n "$j" ] && cmd.exe /c "rmdir \"$j\"" >/dev/null 2>&1 || true; done
+  if command -v powershell.exe >/dev/null 2>&1; then
+    wtw=$(cygpath -w "$wt" 2>/dev/null || echo "$wt")
+    powershell.exe -NoProfile -Command \
+      "Get-ChildItem -LiteralPath '$wtw' -Recurse -Force -Attributes ReparsePoint | ForEach-Object { [System.IO.Directory]::Delete(\$_.FullName) }" \
+      2>/dev/null || true
   fi
   git worktree remove --force "$wt" 2>/dev/null || true
 }
