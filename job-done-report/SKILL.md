@@ -15,16 +15,24 @@ both die: every sentence must be one he cannot read two ways.
 ## Shape, in this order, nothing else
 
 1. **Result.** One line: done / not done / done except X. First, before any reason.
-2. **What it means for him.** What is different on his machine or in his product, in plain words:
-   "Before, X. Now, Y." What he can do that he could not before. One to three sentences.
-3. **What went wrong.** Only things that cost time, money or trust, each one sentence with the
+2. **Needs you.** A decision or an act only he can do, with the owner named, or the word
+   "nothing". Second, so a reader who stops after two lines knows the state and his ask.
+3. **What it means for him.** What is different on his machine or in his product, in plain words:
+   "Before, X. Now, Y." One to three sentences.
+4. **Verified how.** Who checked and whether they ran or only read: "the finish line passed on a
+   fresh clone", "the reviewer ran the failing case", "I read the code only". Add a link or a path
+   only when a relevant one already exists (the run's page, the commit, the findings file, the
+   report); never make one up and never omit the sentence because there is no link.
+5. **What went wrong.** Only things that cost time, money or trust, each one sentence with the
    cause and the word "fixed" or "not fixed". My own mistakes in the same voice as the workers'.
    Dropped when nothing did.
-4. **Needs you.** A decision or an act only he can do, with the owner named, or the word "nothing".
-5. **Next.** One line: what I do next unless he says otherwise, and when he hears from me again.
+6. **Not done.** What was left out or is still open, and the risk it leaves. Dropped when empty.
+7. **Next.** One line: what I do next unless he says otherwise, and when he hears from me again.
 
 A number only when it changes what he does (money, time, a score), as digits, in a short table when
-there are several. Model names only when the roster was his question.
+there are several. Model names only when the roster was his question. Evidence for the shape:
+agent reports claim unimplemented work often enough (45% of inconsistent agent pull requests, 23%
+of real-session failures) that "verified how" is the one slot the reader cannot do without.
 
 ## Words
 
@@ -51,12 +59,15 @@ each. Cut by leaving out, never by packing sentences, never by dropping a "what 
 **Done.** You can now stop, resume, add a rule to, or force the state of a running job from the
 command line, and the running engine obeys within a few seconds.
 
+**Needs you:** nothing.
+
 **What went wrong.** My own test script was wrong: it assumed starting a job does not also run the
 work, so the test kept finishing a fake job with real, paid model calls. Fixed. While repairing it I
 found a real bug: an order to start a worker that was queued before a job finished still fires after
 it finishes. Not fixed.
 
-**Needs you:** nothing.
+**Verified how.** The finish line passed twice on a fresh clone, and the reviewer ran each rejected
+case before accepting the fix; run page http://localhost:8777/?run=rt-j26.
 
 **Next:** fix that bug as the next job; you hear from me when it lands.
 
@@ -64,4 +75,4 @@ it finishes. Not fixed.
 
 Read it once as someone who has never seen this project. A defect is: a word you would have to look
 up; an "it" or "this" whose noun is not in the same sentence; a sentence readable two ways; a
-sentence over 25 words; a negative that could be a positive; a slot out of order.
+sentence over 25 words; a negative that could be a positive; a slot out of order; a "done" with no "verified how".
