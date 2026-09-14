@@ -14,6 +14,8 @@ git clone https://github.com/YotamPeled/skills.git ~/src/skills
 # Claude Code
 ln -s ~/src/skills/adversarial-review ~/.claude/skills/adversarial-review
 ln -s ~/src/skills/goal-prompt        ~/.claude/skills/goal-prompt
+ln -s ~/src/skills/explain-plainly    ~/.claude/skills/explain-plainly
+ln -s ~/src/skills/job-done-report    ~/.claude/skills/job-done-report
 ln -s ~/src/skills/adversarial-review/agents/review-auditor.md ~/.claude/agents/
 ln -s ~/src/skills/adversarial-review/agents/review-breaker.md ~/.claude/agents/
 
@@ -94,3 +96,16 @@ running `.breaker/progress.md`; see the Codex `SKILL.md` for the rest.
 How to write a correct `/goal` for Codex or Claude Code: the official template and its six
 slots, the character cap, what changes when a goal is active, and a worked example
 (`examples/overnight-board-goal.md`).
+
+### `explain-plainly`
+
+How to explain a concept, a design or a decision to a reader who gets one message, cold, on a
+phone: answer first, shape by the kind of question, twelve word rules each backed by a study or a
+plain-language standard (sentence length, positives over negatives, one name per thing, no bare
+pronouns, dates not "yesterday", first-person hedging only where unsure), and a word budget.
+
+### `job-done-report`
+
+Same word rules, fixed shape for a finished job: result, what it means for the reader, what went
+wrong (own mistakes included), what needs the reader, what comes next. A fixed handoff form is the
+one writing change with hard evidence behind it (I-PASS, NEJM 2014: errors down 23%).
