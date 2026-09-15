@@ -17,7 +17,7 @@ both die: every sentence must be one he cannot read two ways.
 1. **Result.** One line: done / not done / done except X. First, before any reason.
 2. **Needs you.** A decision or an act only he can do, with the owner named, or the word
    "nothing". Second, so a reader who stops after two lines knows the state and his ask.
-3. **What it means for him.** What is different on his machine or in his product, in plain words:
+3. **What it means for you.** What is different on his machine or in his product, in plain words:
    "Before, X. Now, Y." One to three sentences.
 4. **Verified how.** Who checked and whether they ran or only read: "the finish line passed on a
    fresh clone", "the reviewer ran the failing case", "I read the code only". Add a link or a path
