@@ -1,6 +1,6 @@
 ---
 name: adversarial-review
-description: "The only review method here: two independent reviewers with different methods (auditor reads, breaker executes) over a diff, plan, or artifact, evidence schema per finding, findings merged by severity and confidence. Required for security work. Trigger: /adversarial-review"
+description: "The only review method here: two independent reviewers with different methods (auditor reads, breaker executes) over a diff, plan, or artifact, plus Claude Code's built-in /code-review as a third source when run from Claude Code; evidence schema per finding, findings merged by severity and confidence. Required for security work. Trigger: /adversarial-review"
 ---
 
 # Adversarial review (Claude driver)
@@ -14,7 +14,8 @@ Full method (auditor + breaker) for anything security-relevant, production-facin
 data, money, or a defect class that has repeated. **Light option: auditor only**, for a change that
 is small, low-risk, and none of the above; skip step 3's breaker, skip the agreement map, and record
 "reviewed by adversarial-review (light)" in the ledger. On Codex the built-in `codex review` alone is
-an acceptable light option too. The method is never weakened; only the depth is chosen.
+an acceptable light option too; on Claude Code, the built-in `/code-review` alone is. The method is
+never weakened; only the depth is chosen.
 
 ## 1. Package the target
 
@@ -41,8 +42,19 @@ supposed to satisfy, not whether you think it does. A reviewer given your conclu
   wipes the original (observed 2026-09-03). Remove only after `find <wt> -type l` (and reparse
   points on Windows) is empty, else unlink those entries first or use a plain copy of the tree.
 
-Effort is set by the agent definition (Opus 5, high); the templates carry no effort line.
+Model and effort are set by the agent definitions: `model: opus` (always the latest Opus) and
+`effort: high`; the templates carry no effort line.
 Neither reviewer sees the other's findings. Do not review inline yourself.
+
+**On Claude Code, add the built-in `/code-review` as a third source**, in the same message as the
+two agents: the `Skill` tool with `skill: "code-review"`, `args: "high <PR number | branch>"`. It
+reviews in its own fresh subagent, so it stays independent; never pass `--fix` or `--comment`
+(reviewers do not change the target). It runs in round 1 and in the terminal full-scope pass only,
+not on round deltas: it takes no PRIOR_FINDINGS, so mid-loop it would re-raise settled findings.
+Its output has no evidence schema, so `check-findings` does not apply to it: record each finding
+with its file:line as a non-executed finding. Outside the diff, it is PRE-EXISTING. A BLOCKER or
+MAJOR goes through the disprover (step 5) like an auditor finding. On Codex there is no
+equivalent; skip it.
 
 For an external reviewer (Grok, Muse), hand the same filled template as the spec; the tool
 restriction does not reach them, so the fence there is prose only, and `check-findings` is the
@@ -84,13 +96,14 @@ findings skip the disprover and go straight to the backlog.
 
 ## 6. Merge and present
 
-Dedup by root cause. A finding surfaced by BOTH is corroborated: near-certain. Weigh single-source
+Dedup by root cause. A finding surfaced by two or more sources (auditor, breaker, `/code-review`)
+is corroborated: near-certain. Weigh single-source
 findings by their confidence field. Verify every BLOCKER/MAJOR yourself (through a subagent
 re-run) before acting. Present three things separately:
 - **Ranked findings**: the standards axis, corroborated first, severity then confidence.
 - **Spec axis**: asked / delivered / unasked with the request quoted. Kept out of the ranking:
   "does the wrong thing well" and "does the right thing badly" are different problems.
-- **Agreement map**: per root cause, found by both / auditor only / breaker only, and for each
+- **Agreement map**: per root cause, which sources found it (auditor / breaker / `/code-review`), and for each
   divergence whether it is a topic the other never covered (expected) or the same evidence read
   two ways (adjudicate it and say which way you went).
 Carry both DISMISSED lists and the PRE-EXISTING lists through unedited, collapsed at the end.
@@ -119,7 +132,7 @@ request for a new oracle case, not a merge block.
 
 BLOCKS landing: a red mechanical gate (build, tests, CI_COMMAND as CI runs it); the oracle below its
 bar or regressed; any UPHELD BLOCKER; any UPHELD MAJOR at confidence >= 0.6 inside or provably reached
-from the diff; any MAJOR corroborated by both reviewers; any unimplemented item of the frozen
+from the diff; any MAJOR corroborated by two sources; any unimplemented item of the frozen
 contract that is checkable by construction (a contract sentence quantified over all inputs, "never
 guesses", "any construct", is checked by the oracle only; a reviewer-invented instance outside the
 oracle is an oracle-case request, listed under SPEC). A RULES FILE violation blocks once per rule;
