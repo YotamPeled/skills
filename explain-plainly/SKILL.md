@@ -1,6 +1,6 @@
 ---
 name: explain-plainly
-description: Explain a concept, decision or trade-off to the owner in plain English as if this were the one message he gets and he knows nothing. Use for every explanation of a design, a method, a mechanism or a recommendation; the owner asked for this style permanently on 2026-09-10 ("keep using it forever"), on 2026-09-14 added "if he misreads it we both die, and as few tokens as possible", and on 2026-09-15 had the rules rebuilt on published evidence. Finished jobs use job-done-report instead.
+description: Plain-English explanation of a design, decision, mechanism or recommendation: answer first, no jargon, short. Use for every such explanation. Finished jobs use job-done-report instead.
 ---
 
 # Explain plainly

@@ -1,6 +1,6 @@
 ---
 name: job-done-report
-description: How to tell the owner a job is finished. Use at the end of every job, run, review or merge, and whenever he asks "where do we stand". Simple words, zero assumed context, nothing he could misread, as few tokens as possible. Asked for 2026-09-14; rules rebuilt on published evidence 2026-09-15.
+description: Fixed shape for reporting a finished job, run, review or merge, or "where do we stand": result, needs-you, what it means, verified how, what went wrong, next.
 ---
 
 # Job-done report
